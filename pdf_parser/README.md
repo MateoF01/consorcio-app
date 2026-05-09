@@ -77,11 +77,12 @@ El handler es:
 pdf_parser.index.lambda_handler
 ```
 
-El evento puede incluir una de estas dos opciones:
+El evento puede incluir una de estas dos opciones para el PDF:
 
 ```json
 {
-  "pdf_base64": "JVBERi0xLjIK..."
+  "pdf_base64": "JVBERi0xLjIK...",
+  "s3_bucket": "mi-bucket"
 }
 ```
 
@@ -89,9 +90,49 @@ o:
 
 ```json
 {
-  "pdf_path": "/var/task/archivo.pdf"
+  "pdf_path": "/var/task/archivo.pdf",
+  "s3_bucket": "mi-bucket"
 }
 ```
+
+También podés pasar el bucket por variable de entorno:
+
+```text
+S3_BUCKET=mi-bucket
+```
+
+Opcionalmente podés overridear el prefijo base:
+
+```text
+S3_PREFIX=expensas-dashboard-data
+```
+
+## Estructura en S3
+
+El `lambda_handler` guarda siempre dos archivos:
+
+- el PDF original
+- el JSON parseado
+
+La estructura queda así:
+
+```text
+expensas-dashboard-data/
+  cucha-cucha-1588-cap-fed/
+    2026-04/
+      original.pdf
+      parsed.json
+```
+
+El nombre del edificio se arma a partir de `consorcio.nombre`, normalizado a slug.
+La carpeta de período se arma a partir de `consorcio.periodo`.
+
+## Respuesta de Lambda
+
+La respuesta devuelve:
+
+- `data`: el JSON parseado
+- `storage`: bucket y keys usadas en S3
 
 ## Notas
 

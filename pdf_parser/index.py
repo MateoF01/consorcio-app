@@ -3,11 +3,12 @@ from __future__ import annotations
 import base64
 import io
 import json
+import os
 import re
 import sys
-from collections import defaultdict
 from pathlib import Path
 from typing import Any
+import unicodedata
 
 
 CURRENT_DIR = Path(__file__).resolve().parent
@@ -46,9 +47,100 @@ ACCOUNT_COLUMN_RANGES = {
     "total": (710, 761),
 }
 
+SPANISH_MONTHS = {
+    "enero": "01",
+    "febrero": "02",
+    "marzo": "03",
+    "abril": "04",
+    "mayo": "05",
+    "junio": "06",
+    "julio": "07",
+    "agosto": "08",
+    "septiembre": "09",
+    "setiembre": "09",
+    "octubre": "10",
+    "noviembre": "11",
+    "diciembre": "12",
+}
+
 
 def clean_space(value: str) -> str:
     return re.sub(r"\s+", " ", value).strip()
+
+
+def slugify(value: str | None) -> str:
+    if not value:
+        return "edificio-sin-nombre"
+    normalized = unicodedata.normalize("NFKD", value)
+    ascii_value = normalized.encode("ascii", "ignore").decode("ascii")
+    slug = re.sub(r"[^a-zA-Z0-9]+", "-", ascii_value.lower()).strip("-")
+    return slug or "edificio-sin-nombre"
+
+
+def parse_period_folder(periodo: str | None) -> str:
+    if not periodo:
+        return "periodo-desconocido"
+    match = re.match(r"^([A-Za-zÁÉÍÓÚáéíóú]+)\s*/\s*(\d{4})$", periodo.strip())
+    if not match:
+        return slugify(periodo)
+    month_name = (
+        unicodedata.normalize("NFKD", match.group(1))
+        .encode("ascii", "ignore")
+        .decode("ascii")
+        .lower()
+    )
+    month = SPANISH_MONTHS.get(month_name)
+    year = match.group(2)
+    if not month:
+        return year
+    return f"{year}-{month}"
+
+
+def build_s3_keys(parsed_payload: dict[str, Any], prefix: str = "expensas-dashboard-data") -> dict[str, str]:
+    consortium = parsed_payload.get("consorcio", {})
+    building_name = consortium.get("nombre")
+    period = consortium.get("periodo")
+    building_slug = slugify(building_name)
+    period_folder = parse_period_folder(period)
+    base_prefix = "/".join(
+        segment.strip("/")
+        for segment in [prefix, building_slug, period_folder]
+        if segment and segment.strip("/")
+    )
+    return {
+        "base_prefix": base_prefix,
+        "original_pdf_key": f"{base_prefix}/original.pdf",
+        "parsed_json_key": f"{base_prefix}/parsed.json",
+    }
+
+
+def upload_to_s3(bucket: str, pdf_bytes: bytes, parsed_payload: dict[str, Any], prefix: str = "expensas-dashboard-data") -> dict[str, str]:
+    try:
+        import boto3
+    except ModuleNotFoundError as exc:
+        raise RuntimeError("boto3 no está disponible en este entorno. En AWS Lambda suele venir preinstalado.") from exc
+
+    s3 = boto3.client("s3")
+    keys = build_s3_keys(parsed_payload, prefix=prefix)
+    parsed_json_bytes = json.dumps(parsed_payload, ensure_ascii=False, indent=2).encode("utf-8")
+
+    s3.put_object(
+        Bucket=bucket,
+        Key=keys["original_pdf_key"],
+        Body=pdf_bytes,
+        ContentType="application/pdf",
+    )
+    s3.put_object(
+        Bucket=bucket,
+        Key=keys["parsed_json_key"],
+        Body=parsed_json_bytes,
+        ContentType="application/json; charset=utf-8",
+    )
+
+    return {
+        "bucket": bucket,
+        **keys,
+    }
 
 
 def parse_amount(value: str | None) -> float | None:
@@ -400,7 +492,18 @@ def lambda_handler(event: dict[str, Any], _context: Any) -> dict[str, Any]:
     else:
         raise ValueError("El evento debe incluir 'pdf_base64' o 'pdf_path'.")
 
-    return parse_pdf_to_json(pdf_bytes)
+    parsed_payload = parse_pdf_to_json(pdf_bytes)
+
+    bucket = event.get("s3_bucket") or os.getenv("S3_BUCKET")
+    prefix = event.get("s3_prefix") or os.getenv("S3_PREFIX") or "expensas-dashboard-data"
+    if not bucket:
+        raise ValueError("Falta configurar el bucket S3. Enviá 's3_bucket' en el evento o definí la variable de entorno 'S3_BUCKET'.")
+
+    storage = upload_to_s3(bucket=bucket, pdf_bytes=pdf_bytes, parsed_payload=parsed_payload, prefix=prefix)
+    return {
+        "data": parsed_payload,
+        "storage": storage,
+    }
 
 
 def main(argv: list[str]) -> int:
