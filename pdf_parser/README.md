@@ -6,23 +6,62 @@ Parser de liquidaciones de expensas en PDF, pensado para correr en AWS Lambda y 
 
 - `pdf_parser/index.py`: parser principal
 - `pdf_parser/__init__.py`: marca el directorio como paquete importable
-- `pdf_parser/vendor/`: dependencias embebidas para el parser
+- `pdf_parser/requirements.txt`: dependencias usadas por el contenedor
 
 ## Requisitos
 
 - Python 3.10+ recomendado
 - El parser usa `pdfplumber`
-- La dependencia ya quedó instalada dentro de `pdf_parser/vendor`, no hace falta crear un entorno aparte para probar este repo
+- Si querés correrlo fuera del contenedor, instalá dependencias con `pip install -r pdf_parser/requirements.txt`
 
 ## Probar local
 
 Desde la raíz del repo:
 
 ```bash
+python3 -m pip install -r pdf_parser/requirements.txt
+```
+
+Después:
+
+```bash
 python3 pdf_parser/index.py 'Liq_CUCH_CUCHA_CUCHA_1588_CAP__FED__04_2026.Pdf'
 ```
 
 Eso imprime el JSON parseado por `stdout`.
+
+## Probar como Lambda Container
+
+### 1. Build de la imagen
+
+Desde la raíz del repo:
+
+```bash
+docker build -t pdf-parser-lambda -f pdf_parser/Dockerfile .
+```
+
+### 2. Levantar la Lambda local
+
+Este comando monta el repo en `/workspace` para que la Lambda pueda leer el PDF de ejemplo:
+
+```bash
+docker run --rm -p 9000:8080 -v "$PWD:/workspace" pdf-parser-lambda
+```
+
+### 3. Invocar la Lambda local
+
+En otra terminal:
+
+```bash
+curl -XPOST 'http://localhost:9000/2015-03-31/functions/function/invocations' \
+  -H 'Content-Type: application/json' \
+  -d @pdf_parser/event.local.json
+```
+
+El archivo [event.local.json](/Users/mateo/Documents/GitHub/consorcio-app/pdf_parser/event.local.json) usa:
+
+- `pdf_path`: apunta al PDF montado en `/workspace`
+- `skip_s3_upload: true`: para poder probar el parser sin credenciales AWS ni bucket
 
 ## Estructura del JSON
 
@@ -95,6 +134,15 @@ o:
 }
 ```
 
+Para desactivar la subida a S3 en pruebas locales:
+
+```json
+{
+  "pdf_path": "/workspace/Liq_CUCH_CUCHA_CUCHA_1588_CAP__FED__04_2026.Pdf",
+  "skip_s3_upload": true
+}
+```
+
 También podés pasar el bucket por variable de entorno:
 
 ```text
@@ -138,5 +186,6 @@ La respuesta devuelve:
 
 - Este parser está ajustado al layout del PDF actual de expensas.
 - Usa `pdfplumber` para extraer layout, texto y columnas.
+- El contenedor instala dependencias desde `pdf_parser/requirements.txt`.
 - Si cambia mucho el formato del emisor, puede hacer falta recalibrar reglas de columnas o regex.
 - Si el PDF futuro viene escaneado como imagen, este parser no alcanza por sí solo y habría que sumar OCR.

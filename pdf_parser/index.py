@@ -10,12 +10,6 @@ from pathlib import Path
 from typing import Any
 import unicodedata
 
-
-CURRENT_DIR = Path(__file__).resolve().parent
-VENDOR_DIR = CURRENT_DIR / "vendor"
-if str(VENDOR_DIR) not in sys.path:
-    sys.path.insert(0, str(VENDOR_DIR))
-
 import pdfplumber
 
 
@@ -493,6 +487,12 @@ def lambda_handler(event: dict[str, Any], _context: Any) -> dict[str, Any]:
         raise ValueError("El evento debe incluir 'pdf_base64' o 'pdf_path'.")
 
     parsed_payload = parse_pdf_to_json(pdf_bytes)
+
+    if event.get("skip_s3_upload") is True:
+        return {
+            "data": parsed_payload,
+            "storage": None,
+        }
 
     bucket = event.get("s3_bucket") or os.getenv("S3_BUCKET")
     prefix = event.get("s3_prefix") or os.getenv("S3_PREFIX") or "expensas-dashboard-data"

@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+vendor/
+pdf_parser.zip
+.DS_Store
+.git
