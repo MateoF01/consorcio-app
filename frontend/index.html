@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Consorcio App</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      background: #f5f7fb;
+      color: #1f2937;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 60px auto;
+      padding: 24px;
+    }
+
+    .hero {
+      text-align: center;
+      margin-bottom: 50px;
+    }
+
+    h1 {
+      font-size: 3rem;
+      margin-bottom: 12px;
+      color: #111827;
+    }
+
+    .subtitle {
+      font-size: 1.2rem;
+      color: #6b7280;
+    }
+
+    .dropzone {
+      background: white;
+      border: 3px dashed #9ca3af;
+      border-radius: 18px;
+      padding: 60px 30px;
+      text-align: center;
+      cursor: pointer;
+      transition: 0.2s ease;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    }
+
+    .dropzone:hover,
+    .dropzone.dragover {
+      border-color: #2563eb;
+      background: #eff6ff;
+    }
+
+    .dropzone p {
+      font-size: 1.1rem;
+      color: #374151;
+    }
+
+    .small {
+      margin-top: 12px;
+      font-size: 0.9rem;
+      color: #6b7280;
+    }
+
+    #fileInput {
+      display: none;
+    }
+
+    .status {
+      margin-top: 25px;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    .loading {
+      color: #2563eb;
+    }
+
+    .success {
+      color: #059669;
+    }
+
+    .error {
+      color: #dc2626;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <section class="hero">
+      <h1>Bienvenido a Consorcio App</h1>
+      <p class="subtitle">
+        La forma más sencilla de visualizar tus expensas
+      </p>
+    </section>
+
+    <div class="dropzone" id="dropzone">
+      <p>📄 Arrastrá tu PDF acá o hacé click para subirlo</p>
+      <p class="small">Solo archivos PDF</p>
+      <input type="file" id="fileInput" accept="application/pdf" />
+    </div>
+
+    <div id="status" class="status"></div>
+  </div>
+
+  <script>
+    const API_URL = "https://kqvpte8t1a.execute-api.sa-east-1.amazonaws.com/prod/document";
+    const dropzone = document.getElementById("dropzone");
+    const fileInput = document.getElementById("fileInput");
+    const status = document.getElementById("status");
+
+    dropzone.addEventListener("click", () => fileInput.click());
+
+    dropzone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dropzone.classList.add("dragover");
+    });
+
+    dropzone.addEventListener("dragleave", () => {
+      dropzone.classList.remove("dragover");
+    });
+
+    dropzone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropzone.classList.remove("dragover");
+
+      const file = e.dataTransfer.files[0];
+      if (file) uploadFile(file);
+    });
+
+    fileInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (file) uploadFile(file);
+    });
+
+    async function uploadFile(file) {
+      if (file.type !== "application/pdf") {
+        status.className = "status error";
+        status.textContent = "Subí un PDF válido.";
+        return;
+      }
+
+      status.className = "status loading";
+      status.textContent = "Procesando archivo...";
+
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const response = await fetch(API_URL, {
+          method: "POST",
+          body: formData
+        });
+
+        const data = await response.json();
+
+        status.className = "status success";
+        status.textContent = "PDF procesado correctamente";
+
+        console.log("Respuesta:", data);
+
+      } catch (err) {
+        console.error(err);
+        status.className = "status error";
+        status.textContent = "Error enviando archivo";
+      }
+    }
+  </script>
+</body>
+</html>
