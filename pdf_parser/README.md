@@ -182,6 +182,132 @@ La respuesta devuelve:
 - `data`: el JSON parseado
 - `storage`: bucket y keys usadas en S3
 
+## Actualizar el parser más adelante
+
+Si después querés cambiar lógica de parseo, campos del JSON o la forma de guardar en S3, el flujo recomendado es este.
+
+### 1. Editar el código
+
+Normalmente vas a tocar alguno de estos archivos:
+
+- [pdf_parser/index.py](/Users/mateo/Documents/GitHub/consorcio-app/pdf_parser/index.py): lógica del parser y upload a S3
+- [pdf_parser/requirements.txt](/Users/mateo/Documents/GitHub/consorcio-app/pdf_parser/requirements.txt): dependencias Python
+- [pdf_parser/Dockerfile](/Users/mateo/Documents/GitHub/consorcio-app/pdf_parser/Dockerfile): imagen de Lambda, solo si necesitás cambiar cómo se construye el contenedor
+
+### 2. Probar localmente el cambio
+
+Si querés probar el parser directo:
+
+```bash
+python3 -m pip install -r pdf_parser/requirements.txt
+python3 pdf_parser/index.py 'Liq_CUCH_CUCHA_CUCHA_1588_CAP__FED__04_2026.Pdf'
+```
+
+Si querés validar sintaxis:
+
+```bash
+python3 -m py_compile pdf_parser/index.py
+```
+
+### 3. Probar la Lambda local como contenedor
+
+Reconstruí la imagen:
+
+```bash
+docker build -t pdf-parser-lambda -f pdf_parser/Dockerfile .
+```
+
+Levantala:
+
+```bash
+docker run --rm -p 9000:8080 -v "$PWD:/workspace" pdf-parser-lambda
+```
+
+Invocala:
+
+```bash
+curl -XPOST 'http://localhost:9000/2015-03-31/functions/function/invocations' \
+  -H 'Content-Type: application/json' \
+  -d @pdf_parser/event.local.json
+```
+
+### 4. Volver a buildar la imagen para AWS
+
+Cuando el cambio ya está bien:
+
+```bash
+docker build -t pdf-parser-lambda -f pdf_parser/Dockerfile .
+```
+
+### 5. Etiquetar la imagen para ECR
+
+Ejemplo con tu cuenta y repo:
+
+```bash
+docker tag pdf-parser-lambda:latest 623859664918.dkr.ecr.sa-east-1.amazonaws.com/pdf-parser-lambda:latest
+```
+
+Mejor práctica: además del `latest`, podés usar tags versionados:
+
+```bash
+docker tag pdf-parser-lambda:latest 623859664918.dkr.ecr.sa-east-1.amazonaws.com/pdf-parser-lambda:v2
+```
+
+### 6. Push a ECR
+
+Si todavía no hiciste login en ECR:
+
+```bash
+aws ecr get-login-password --region sa-east-1 | docker login --username AWS --password-stdin 623859664918.dkr.ecr.sa-east-1.amazonaws.com
+```
+
+Después:
+
+```bash
+docker push 623859664918.dkr.ecr.sa-east-1.amazonaws.com/pdf-parser-lambda:latest
+```
+
+o si versionaste:
+
+```bash
+docker push 623859664918.dkr.ecr.sa-east-1.amazonaws.com/pdf-parser-lambda:v2
+```
+
+### 7. Actualizar la Lambda desde la consola de AWS
+
+En AWS Console:
+
+1. Entrá a **Lambda**
+2. Abrí tu función
+3. Andá a la pestaña o sección de **Code**
+4. En funciones basadas en imagen, usá **Deploy new image** o **Edit image URI**
+5. Seleccioná la nueva imagen/tag de ECR
+6. Guardá / Deploy
+
+Si usás siempre el tag `latest`, igual conviene hacer el deploy explícito desde la consola para que Lambda tome la nueva imagen.
+
+### 8. Probar la función actualizada
+
+Después del deploy:
+
+1. Andá a la pestaña **Test**
+2. Usá un evento de prueba
+3. Revisá el resultado
+4. Si falla, mirá **CloudWatch Logs**
+
+## Flujo corto de mantenimiento
+
+Cada vez que cambies algo, el ciclo normal es:
+
+```bash
+python3 pdf_parser/index.py 'Liq_CUCH_CUCHA_CUCHA_1588_CAP__FED__04_2026.Pdf'
+docker build -t pdf-parser-lambda -f pdf_parser/Dockerfile .
+docker tag pdf-parser-lambda:latest 623859664918.dkr.ecr.sa-east-1.amazonaws.com/pdf-parser-lambda:latest
+docker push 623859664918.dkr.ecr.sa-east-1.amazonaws.com/pdf-parser-lambda:latest
+```
+
+Y después actualizás la Lambda desde la consola.
+
 ## Notas
 
 - Este parser está ajustado al layout del PDF actual de expensas.

@@ -5,68 +5,107 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Consorcio App</title>
 
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <style>
+    :root {
+      --bg: #f3f0e8;
+      --surface: rgba(255, 255, 255, 0.86);
+      --surface-strong: #ffffff;
+      --line: rgba(44, 62, 80, 0.12);
+      --text: #1f2933;
+      --muted: #667085;
+      --brand: #b3541e;
+      --brand-deep: #7a2e12;
+      --accent: #1e6f5c;
+      --shadow: 0 20px 50px rgba(54, 42, 31, 0.12);
+    }
+
     * {
       box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: Arial, sans-serif;
     }
 
     body {
-      background: #f5f7fb;
-      color: #1f2937;
+      margin: 0;
       min-height: 100vh;
+      font-family: Georgia, "Times New Roman", serif;
+      background:
+        radial-gradient(circle at top left, rgba(179, 84, 30, 0.16), transparent 30%),
+        radial-gradient(circle at top right, rgba(30, 111, 92, 0.18), transparent 28%),
+        linear-gradient(180deg, #f8f4eb 0%, #f1ece1 100%);
+      color: var(--text);
     }
 
     .container {
-      max-width: 900px;
-      margin: 60px auto;
-      padding: 24px;
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
     }
 
     .hero {
-      text-align: center;
-      margin-bottom: 50px;
+      display: grid;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+
+    .eyebrow {
+      color: var(--brand);
+      font-size: 0.9rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      font-family: Arial, sans-serif;
+      font-weight: 700;
     }
 
     h1 {
-      font-size: 3rem;
-      margin-bottom: 12px;
-      color: #111827;
+      margin: 0;
+      font-size: clamp(2.4rem, 4vw, 4.4rem);
+      line-height: 0.95;
+      color: var(--brand-deep);
     }
 
     .subtitle {
-      font-size: 1.2rem;
-      color: #6b7280;
+      margin: 0;
+      max-width: 780px;
+      color: var(--muted);
+      font-size: 1.08rem;
+      line-height: 1.6;
+      font-family: Arial, sans-serif;
     }
 
     .dropzone {
-      background: white;
-      border: 3px dashed #9ca3af;
-      border-radius: 18px;
-      padding: 60px 30px;
-      text-align: center;
+      position: relative;
+      overflow: hidden;
+      display: grid;
+      gap: 10px;
+      place-items: center;
+      padding: 52px 28px;
+      border-radius: 28px;
+      border: 2px dashed rgba(122, 46, 18, 0.28);
+      background: var(--surface);
+      backdrop-filter: blur(18px);
+      box-shadow: var(--shadow);
       cursor: pointer;
-      transition: 0.2s ease;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+      transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
     }
 
     .dropzone:hover,
     .dropzone.dragover {
-      border-color: #2563eb;
-      background: #eff6ff;
+      transform: translateY(-2px);
+      border-color: var(--brand);
+      background: rgba(255, 248, 240, 0.95);
     }
 
-    .dropzone p {
-      font-size: 1.1rem;
-      color: #374151;
+    .dropzone-title {
+      font-size: 1.5rem;
+      color: var(--brand-deep);
     }
 
-    .small {
-      margin-top: 12px;
-      font-size: 0.9rem;
-      color: #6b7280;
+    .dropzone-copy {
+      color: var(--muted);
+      font-family: Arial, sans-serif;
+      text-align: center;
+      line-height: 1.6;
     }
 
     #fileInput {
@@ -74,52 +113,290 @@
     }
 
     .status {
-      margin-top: 25px;
-      text-align: center;
-      font-weight: bold;
+      min-height: 26px;
+      margin: 18px 2px 0;
+      font-family: Arial, sans-serif;
+      font-weight: 700;
     }
 
     .loading {
-      color: #2563eb;
+      color: #9a6700;
     }
 
     .success {
-      color: #059669;
+      color: #027a48;
     }
 
     .error {
-      color: #dc2626;
+      color: #b42318;
+    }
+
+    .dashboard {
+      display: none;
+      margin-top: 32px;
+      gap: 22px;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      background: var(--surface);
+      backdrop-filter: blur(18px);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 24px;
+      box-shadow: var(--shadow);
+    }
+
+    .card-label {
+      margin: 0 0 14px;
+      color: var(--brand);
+      font-size: 0.84rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      font-family: Arial, sans-serif;
+      font-weight: 700;
+    }
+
+    .card-title {
+      margin: 0 0 10px;
+      font-size: 1.6rem;
+      color: var(--brand-deep);
+    }
+
+    .meta-list {
+      display: grid;
+      gap: 10px;
+      font-family: Arial, sans-serif;
+    }
+
+    .meta-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .meta-row:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .meta-key {
+      color: var(--muted);
+    }
+
+    .meta-value {
+      text-align: right;
+      font-weight: 700;
+    }
+
+    .chart-panel {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
+      gap: 20px;
+      align-items: start;
+    }
+
+    .panel-title {
+      margin: 0 0 8px;
+      font-size: 1.8rem;
+      color: var(--brand-deep);
+    }
+
+    .panel-copy {
+      margin: 0 0 18px;
+      color: var(--muted);
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+    }
+
+    .chart-wrap {
+      max-width: 560px;
+      margin: 0 auto;
+    }
+
+    .highlights {
+      display: grid;
+      gap: 12px;
+    }
+
+    .highlight {
+      background: var(--surface-strong);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 16px 18px;
+      font-family: Arial, sans-serif;
+    }
+
+    .highlight strong {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--brand-deep);
+      font-size: 1rem;
+    }
+
+    .highlight span {
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .table-card {
+      margin-top: 22px;
+    }
+
+    .table-scroll {
+      overflow-x: auto;
+      font-family: Arial, sans-serif;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 720px;
+    }
+
+    th,
+    td {
+      padding: 14px 10px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+    }
+
+    th {
+      font-size: 0.76rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+    }
+
+    td {
+      font-size: 0.95rem;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .amount {
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+    }
+
+    @media (max-width: 920px) {
+      .summary-grid,
+      .chart-panel {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
+
 <body>
   <div class="container">
     <section class="hero">
-      <h1>Bienvenido a Consorcio App</h1>
+      <span class="eyebrow">Consorcio Dashboard</span>
+      <h1>Subí una liquidación y convertí el PDF en un dashboard entendible.</h1>
       <p class="subtitle">
-        La forma más sencilla de visualizar tus expensas
+        El archivo se envía al parser, se procesa en Lambda y vuelve listo para mostrar administración, consorcio
+        y la distribución de cuánto le corresponde pagar a cada unidad.
       </p>
     </section>
 
     <div class="dropzone" id="dropzone">
-      <p>📄 Arrastrá tu PDF acá o hacé click para subirlo</p>
-      <p class="small">Solo archivos PDF</p>
+      <div class="dropzone-title">Arrastrá el PDF acá o hacé click para subirlo</div>
+      <div class="dropzone-copy">
+        Se enviará al endpoint real, convertido a base64, y el dashboard se va a renderizar con la respuesta.
+      </div>
       <input type="file" id="fileInput" accept="application/pdf" />
     </div>
 
     <div id="status" class="status"></div>
+
+    <section id="dashboard" class="dashboard">
+      <div class="summary-grid">
+        <article class="card">
+          <p class="card-label">Administración</p>
+          <h2 id="adminName" class="card-title"></h2>
+          <div class="meta-list">
+            <div class="meta-row"><span class="meta-key">Domicilio</span><span id="adminAddress" class="meta-value"></span></div>
+            <div class="meta-row"><span class="meta-key">Mail</span><span id="adminEmail" class="meta-value"></span></div>
+            <div class="meta-row"><span class="meta-key">Teléfono</span><span id="adminPhone" class="meta-value"></span></div>
+            <div class="meta-row"><span class="meta-key">CUIT</span><span id="adminCuit" class="meta-value"></span></div>
+          </div>
+        </article>
+
+        <article class="card">
+          <p class="card-label">Consorcio</p>
+          <h2 id="consortiumName" class="card-title"></h2>
+          <div class="meta-list">
+            <div class="meta-row"><span class="meta-key">Domicilio</span><span id="consortiumAddress" class="meta-value"></span></div>
+            <div class="meta-row"><span class="meta-key">Período</span><span id="consortiumPeriod" class="meta-value"></span></div>
+            <div class="meta-row"><span class="meta-key">Vencimiento</span><span id="consortiumDueDate" class="meta-value"></span></div>
+            <div class="meta-row"><span class="meta-key">Clave SUTERH</span><span id="consortiumSuterh" class="meta-value"></span></div>
+          </div>
+        </article>
+      </div>
+
+      <article class="card">
+        <div class="chart-panel">
+          <div>
+            <h2 class="panel-title">Distribución por unidad</h2>
+            <p id="chartSummary" class="panel-copy"></p>
+            <div class="chart-wrap">
+              <canvas id="expensesChart"></canvas>
+            </div>
+          </div>
+
+          <aside class="highlights" id="highlights"></aside>
+        </div>
+      </article>
+
+      <article class="card table-card">
+        <p class="card-label">Estado de cuentas</p>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Unidad</th>
+                <th>Piso / Dpto</th>
+                <th>Propietario</th>
+                <th class="amount">Saldo anterior</th>
+                <th class="amount">Pagos</th>
+                <th class="amount">Deuda</th>
+                <th class="amount">Intereses</th>
+                <th class="amount">Total</th>
+              </tr>
+            </thead>
+            <tbody id="accountsTableBody"></tbody>
+          </table>
+        </div>
+      </article>
+    </section>
   </div>
 
   <script>
     const API_URL = "https://kqvpte8t1a.execute-api.sa-east-1.amazonaws.com/prod/document";
+    const S3_BUCKET = "ca-dashboard-623859664918-sa-east-1-an";
+
     const dropzone = document.getElementById("dropzone");
     const fileInput = document.getElementById("fileInput");
     const status = document.getElementById("status");
+    const dashboard = document.getElementById("dashboard");
+    const highlights = document.getElementById("highlights");
+    const accountsTableBody = document.getElementById("accountsTableBody");
+
+    let expensesChart = null;
 
     dropzone.addEventListener("click", () => fileInput.click());
 
-    dropzone.addEventListener("dragover", (e) => {
-      e.preventDefault();
+    dropzone.addEventListener("dragover", (event) => {
+      event.preventDefault();
       dropzone.classList.add("dragover");
     });
 
@@ -127,50 +404,245 @@
       dropzone.classList.remove("dragover");
     });
 
-    dropzone.addEventListener("drop", (e) => {
-      e.preventDefault();
+    dropzone.addEventListener("drop", (event) => {
+      event.preventDefault();
       dropzone.classList.remove("dragover");
-
-      const file = e.dataTransfer.files[0];
-      if (file) uploadFile(file);
+      const file = event.dataTransfer.files[0];
+      if (file) {
+        processFile(file);
+      }
     });
 
-    fileInput.addEventListener("change", (e) => {
-      const file = e.target.files[0];
-      if (file) uploadFile(file);
+    fileInput.addEventListener("change", (event) => {
+      const file = event.target.files[0];
+      if (file) {
+        processFile(file);
+      }
     });
 
-    async function uploadFile(file) {
+    async function processFile(file) {
       if (file.type !== "application/pdf") {
-        status.className = "status error";
-        status.textContent = "Subí un PDF válido.";
+        showStatus("Subí un archivo PDF válido.", "error");
         return;
       }
 
-      status.className = "status loading";
-      status.textContent = "Procesando archivo...";
-
       try {
-        const formData = new FormData();
-        formData.append("file", file);
+        dashboard.style.display = "none";
+        showStatus("Convirtiendo el archivo y enviándolo al parser...", "loading");
 
+        const pdfBase64 = await fileToBase64(file);
         const response = await fetch(API_URL, {
           method: "POST",
-          body: formData
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            pdf_base64: pdfBase64,
+            s3_bucket: S3_BUCKET
+          })
         });
 
-        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(`Error HTTP ${response.status}`);
+        }
 
-        status.className = "status success";
-        status.textContent = "PDF procesado correctamente";
+        const payload = await response.json();
+        const data = payload.data;
 
-        console.log("Respuesta:", data);
+        if (!data || !Array.isArray(data["estado de cuentas"])) {
+          throw new Error("La respuesta no tiene la estructura esperada.");
+        }
 
-      } catch (err) {
-        console.error(err);
-        status.className = "status error";
-        status.textContent = "Error enviando archivo";
+        renderDashboard(data);
+        showStatus("PDF procesado correctamente. Dashboard actualizado.", "success");
+      } catch (error) {
+        console.error(error);
+        showStatus("No se pudo procesar el archivo. Revisá la Lambda y la respuesta del endpoint.", "error");
       }
+    }
+
+    function renderDashboard(data) {
+      const administration = data.administracion || {};
+      const consortium = data.consorcio || {};
+      const accounts = data["estado de cuentas"] || [];
+      const totals = data["estado de cuentas totales"] || {};
+
+      setText("adminName", administration.nombre);
+      setText("adminAddress", administration.domicilio);
+      setText("adminEmail", administration.mail);
+      setText("adminPhone", administration.telefono);
+      setText("adminCuit", administration.cuit);
+
+      setText("consortiumName", consortium.nombre);
+      setText("consortiumAddress", consortium.domicilio);
+      setText("consortiumPeriod", consortium.periodo);
+      setText("consortiumDueDate", consortium.vencimiento);
+      setText("consortiumSuterh", consortium.clave_suterh);
+
+      renderChart(accounts, totals);
+      renderHighlights(accounts, totals, consortium);
+      renderTable(accounts);
+
+      dashboard.style.display = "grid";
+    }
+
+    function renderChart(accounts, totals) {
+      const labels = accounts.map((item) => `${item.piso_dpto || "-"} · ${item.propietario || "Sin nombre"}`);
+      const values = accounts.map((item) => Number(item.total || 0));
+      const grandTotal = Number(totals.total || values.reduce((sum, value) => sum + value, 0));
+
+      setText(
+        "chartSummary",
+        `${accounts.length} unidades procesadas. Total consolidado: ${formatCurrency(grandTotal)}. ` +
+        `Cada segmento representa cuánto le corresponde pagar a cada unidad según la liquidación.`
+      );
+
+      const palette = [
+        "#b3541e", "#1e6f5c", "#c27803", "#7a2e12", "#4361ee",
+        "#6d597a", "#ef476f", "#118ab2", "#8d6e63", "#2a9d8f",
+        "#e76f51", "#9c6644", "#5f0f40", "#3d405b", "#4d908e",
+        "#bc6c25", "#386641", "#f28482", "#577590", "#ff9f1c",
+        "#7f5539", "#52796f", "#9d4edd", "#e09f3e", "#a44a3f"
+      ];
+
+      const ctx = document.getElementById("expensesChart").getContext("2d");
+      if (expensesChart) {
+        expensesChart.destroy();
+      }
+
+      expensesChart = new Chart(ctx, {
+        type: "pie",
+        data: {
+          labels,
+          datasets: [{
+            data: values,
+            backgroundColor: labels.map((_, index) => palette[index % palette.length]),
+            borderColor: "#fffaf4",
+            borderWidth: 3,
+            hoverOffset: 12
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            legend: {
+              position: "bottom",
+              labels: {
+                font: {
+                  family: "Arial",
+                  size: 12
+                }
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label(context) {
+                  const item = accounts[context.dataIndex];
+                  const percentage = grandTotal ? ((Number(item.total || 0) / grandTotal) * 100).toFixed(2) : "0.00";
+                  return `${item.piso_dpto || "-"} · ${item.propietario || "Sin nombre"}: ${formatCurrency(item.total)} (${percentage}%)`;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function renderHighlights(accounts, totals, consortium) {
+      const ordered = [...accounts].sort((left, right) => Number(right.total || 0) - Number(left.total || 0));
+      const topThree = ordered.slice(0, 3);
+      const grandTotal = Number(totals.total || 0);
+
+      highlights.innerHTML = "";
+
+      const fragments = [
+        {
+          title: "Resumen del período",
+          body: `${consortium.periodo || "-"} · vencimiento ${consortium.vencimiento || "-"}`
+        },
+        {
+          title: "Total del estado de cuentas",
+          body: formatCurrency(grandTotal)
+        },
+        ...topThree.map((item, index) => ({
+          title: `${index + 1}. ${item.piso_dpto || "-"} · ${item.propietario || "Sin nombre"}`,
+          body: `${formatCurrency(item.total)} · ${grandTotal ? ((Number(item.total || 0) / grandTotal) * 100).toFixed(2) : "0.00"}% del total`
+        }))
+      ];
+
+      for (const fragment of fragments) {
+        const article = document.createElement("article");
+        article.className = "highlight";
+        article.innerHTML = `<strong>${escapeHtml(fragment.title)}</strong><span>${escapeHtml(fragment.body)}</span>`;
+        highlights.appendChild(article);
+      }
+    }
+
+    function renderTable(accounts) {
+      accountsTableBody.innerHTML = "";
+
+      for (const item of accounts) {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${item.unidad ?? "-"}</td>
+          <td>${escapeHtml(item.piso_dpto || "-")}</td>
+          <td>${escapeHtml(item.propietario || "-")}</td>
+          <td class="amount">${formatNullableCurrency(item.saldo_anterior)}</td>
+          <td class="amount">${formatNullableCurrency(item.pagos)}</td>
+          <td class="amount">${formatNullableCurrency(item.deuda)}</td>
+          <td class="amount">${formatNullableCurrency(item.intereses)}</td>
+          <td class="amount">${formatNullableCurrency(item.total)}</td>
+        `;
+        accountsTableBody.appendChild(row);
+      }
+    }
+
+    function fileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = String(reader.result || "");
+          const base64 = result.includes(",") ? result.split(",")[1] : result;
+          resolve(base64);
+        };
+        reader.onerror = () => reject(new Error("No se pudo leer el archivo."));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function formatCurrency(value) {
+      const number = Number(value || 0);
+      return new Intl.NumberFormat("es-AR", {
+        style: "currency",
+        currency: "ARS",
+        maximumFractionDigits: 2
+      }).format(number);
+    }
+
+    function formatNullableCurrency(value) {
+      if (value === null || value === undefined) {
+        return "-";
+      }
+      return formatCurrency(value);
+    }
+
+    function setText(id, value) {
+      document.getElementById(id).textContent = value || "-";
+    }
+
+    function showStatus(message, type) {
+      status.className = `status ${type}`;
+      status.textContent = message;
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll("\"", "&quot;")
+        .replaceAll("'", "&#039;");
     }
   </script>
 </body>
