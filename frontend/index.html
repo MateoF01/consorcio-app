@@ -117,6 +117,9 @@
       margin: 18px 2px 0;
       font-family: Arial, sans-serif;
       font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
 
     .loading {
@@ -129,6 +132,16 @@
 
     .error {
       color: #b42318;
+    }
+
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      border: 2px solid rgba(179, 84, 30, 0.18);
+      border-top-color: var(--brand);
+      animation: spin 0.8s linear infinite;
+      flex-shrink: 0;
     }
 
     .dashboard {
@@ -294,6 +307,15 @@
         grid-template-columns: 1fr;
       }
     }
+
+    @keyframes spin {
+      from {
+        transform: rotate(0deg);
+      }
+      to {
+        transform: rotate(360deg);
+      }
+    }
   </style>
 </head>
 
@@ -309,9 +331,7 @@
 
     <div class="dropzone" id="dropzone">
       <div class="dropzone-title">Arrastrá el PDF acá o hacé click para subirlo</div>
-      <div class="dropzone-copy">
-        Se enviará al endpoint real, convertido a base64, y el dashboard se va a renderizar con la respuesta.
-      </div>
+
       <input type="file" id="fileInput" accept="application/pdf" />
     </div>
 
@@ -632,7 +652,17 @@
 
     function showStatus(message, type) {
       status.className = `status ${type}`;
-      status.textContent = message;
+      status.innerHTML = "";
+
+      if (type === "loading") {
+        const spinner = document.createElement("span");
+        spinner.className = "spinner";
+        status.appendChild(spinner);
+      }
+
+      const text = document.createElement("span");
+      text.textContent = message;
+      status.appendChild(text);
     }
 
     function escapeHtml(value) {
