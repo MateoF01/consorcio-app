@@ -232,6 +232,12 @@
     .chart-wrap {
       max-width: 560px;
       margin: 0 auto;
+      min-height: 320px;
+    }
+
+    .chart-wrap canvas {
+      width: 100% !important;
+      height: auto !important;
     }
 
     .highlights {
@@ -305,6 +311,133 @@
       .summary-grid,
       .chart-panel {
         grid-template-columns: 1fr;
+      }
+
+      .chart-wrap {
+        max-width: 460px;
+        min-height: 280px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .container {
+        padding: 28px 14px 44px;
+      }
+
+      .hero {
+        gap: 12px;
+        margin-bottom: 22px;
+      }
+
+      h1 {
+        line-height: 1.02;
+      }
+
+      .subtitle {
+        font-size: 0.98rem;
+      }
+
+      .dropzone {
+        padding: 34px 18px;
+        border-radius: 22px;
+      }
+
+      .dropzone-title {
+        font-size: 1.2rem;
+        text-align: center;
+      }
+
+      .status {
+        align-items: flex-start;
+        font-size: 0.92rem;
+      }
+
+      .dashboard {
+        margin-top: 24px;
+        gap: 16px;
+      }
+
+      .card {
+        padding: 18px;
+        border-radius: 20px;
+      }
+
+      .card-title,
+      .panel-title {
+        font-size: 1.28rem;
+      }
+
+      .meta-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+      }
+
+      .meta-value {
+        text-align: left;
+      }
+
+      .panel-copy {
+        font-size: 0.94rem;
+      }
+
+      .chart-wrap {
+        max-width: 100%;
+        min-height: 240px;
+      }
+
+      .highlight {
+        padding: 14px;
+      }
+
+      .table-card {
+        margin-top: 0;
+      }
+
+      .table-scroll {
+        margin: 0 -4px;
+        padding-bottom: 4px;
+      }
+
+      table {
+        min-width: 640px;
+      }
+
+      th,
+      td {
+        padding: 12px 8px;
+        font-size: 0.88rem;
+      }
+
+      th {
+        font-size: 0.7rem;
+      }
+    }
+
+    @media (max-width: 420px) {
+      .container {
+        padding-left: 12px;
+        padding-right: 12px;
+      }
+
+      .eyebrow {
+        font-size: 0.76rem;
+      }
+
+      h1 {
+        font-size: 2rem;
+      }
+
+      .dropzone {
+        padding: 28px 14px;
+      }
+
+      .card {
+        padding: 16px;
+      }
+
+      .chart-wrap {
+        min-height: 220px;
       }
     }
 
